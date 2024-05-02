@@ -6,6 +6,7 @@ export const useDataContext = () => useContext(DataContext);
 
 export const DataProvider = ({ children }) => {
   const [data, setData] = useState([]);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     fetchData();
@@ -18,6 +19,7 @@ export const DataProvider = ({ children }) => {
       setData(response.data);
     } catch (error) {
       console.error("Error fetching data:", error);
+      setError("Lỗi khi tải dữ liệu từ máy chủ");
     }
   };
 
@@ -48,6 +50,9 @@ export const DataProvider = ({ children }) => {
       }
     } catch (error) {
       console.error("Error adding customer:", error);
+      if (error.response && error.response.data) {
+        setError(error.response.data.error);
+      }
     }
     return false;
   };
@@ -62,6 +67,9 @@ export const DataProvider = ({ children }) => {
       }
     } catch (error) {
       console.error("Error deleting customer:", error);
+      if (error.response && error.response.data) {
+        setError(error.response.data.error);
+      }
     }
   };
 
@@ -72,7 +80,6 @@ export const DataProvider = ({ children }) => {
         updatedCustomer
       );
       if (response.status === 200) {
-        // Update the data for the specified customer
         const updatedData = data.map((customer) =>
           customer.CUSTOMER_ID === id
             ? { ...customer, ...updatedCustomer }
@@ -80,10 +87,13 @@ export const DataProvider = ({ children }) => {
         );
         setData(updatedData);
         fetchData();
-        return true; // Trả về true khi cập nhật thành công
+        return true;
       }
     } catch (error) {
       console.error("Error updating customer:", error);
+      if (error.response && error.response.data) {
+        setError(error.response.data.error);
+      }
     }
     return false;
   };
@@ -92,6 +102,7 @@ export const DataProvider = ({ children }) => {
     <DataContext.Provider
       value={{
         data,
+        error,
         fetchData,
         addCustomer,
         deleteCustomer,

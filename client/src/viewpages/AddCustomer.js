@@ -15,7 +15,7 @@ import { Link, Outlet } from "react-router-dom";
 import { useDataContext } from "../api/DataContext";
 
 function AddCustomer() {
-  const { addCustomer } = useDataContext();
+  const { data, addCustomer, error } = useDataContext();
 
   const [formData, setFormData] = useState({
     CUSTOMER_TYPE: "Cá nhân",
@@ -50,9 +50,31 @@ function AddCustomer() {
     setFormData({ ...formData, [name]: value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Kiểm tra xem thông tin đã tồn tại không
+    const existingCustomer = data.find(
+      (customer) =>
+        customer.EMAIL === formData.EMAIL ||
+        customer.PHONE === formData.PHONE ||
+        customer.ID_NUMBER === formData.ID_NUMBER
+    );
+
+    if (existingCustomer) {
+      window.alert(
+        `Đã tồn tại khách hàng với ${
+          existingCustomer.EMAIL === formData.EMAIL
+            ? "email này"
+            : existingCustomer.PHONE === formData.PHONE
+            ? "số điện thoại này"
+            : "số CCCD/CMND này"
+        },Vui lòng nhập lại!`
+      );
+      return;
+    }
+
+    // Tiếp tục thêm khách hàng nếu không có thông tin trùng lặp
     const requiredFields = [
       "CUSTOMER_TYPE",
       "NAME",
@@ -64,34 +86,29 @@ function AddCustomer() {
     ];
     for (const field of requiredFields) {
       if (!formData[field]) {
-        setAlertSuccess(false);
-        setAlertMessage("Vui lòng điền đầy đủ thông tin.");
+        window.alert("Vui lòng điền đầy đủ thông tin.");
         return;
       }
     }
 
     if (!validateEmail(formData.EMAIL)) {
-      setAlertSuccess(false);
-      setAlertMessage("Vui lòng nhập địa chỉ email hợp lệ.");
+      window.alert("Vui lòng nhập địa chỉ email hợp lệ.");
       return;
     }
 
     if (!validatePhoneNumber(formData.PHONE)) {
-      setAlertSuccess(false);
-      setAlertMessage("Vui lòng nhập số điện thoại hợp lệ từ 10 đến 12 số.");
+      window.alert("Vui lòng nhập số điện thoại hợp lệ từ 10 đến 12 số.");
       return;
     }
 
     if (!validateIDNumber(formData.ID_NUMBER)) {
-      setAlertSuccess(false);
-      setAlertMessage("Vui lòng nhập số CCCD/CMND hợp lệ từ 5 đến 10 số.");
+      window.alert("Vui lòng nhập số CCCD/CMND hợp lệ từ 5 đến 10 số.");
       return;
     }
 
-    const success = addCustomer(formData);
+    const success = await addCustomer(formData);
     if (success) {
-      setAlertSuccess(true);
-      setAlertMessage("Khách hàng đã được thêm thành công.");
+      window.alert("Khách hàng đã được thêm thành công.");
       setFormData({
         CUSTOMER_TYPE: "Cá nhân",
         NAME: "",
@@ -102,8 +119,11 @@ function AddCustomer() {
         PHONE: "",
       });
     } else {
-      setAlertSuccess(false);
-      setAlertMessage("Không thể thêm khách hàng. Vui lòng thử lại sau.");
+      window.alert(
+        error && error.response && error.response.data
+          ? error.response.data.error
+          : "Không thể thêm khách hàng. Vui lòng thử lại sau."
+      );
     }
   };
 
