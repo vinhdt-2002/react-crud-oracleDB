@@ -1,3 +1,4 @@
+import { AlertError, AlertSuccess } from "components/ui/alert";
 import { CardForm, CardHeader } from "components/ui/card";
 import { Input } from "components/ui/input";
 import moment from "moment";
@@ -17,7 +18,7 @@ import { useDataContext } from "../api/DataContext";
 
 function EditCustomer() {
   const { id } = useParams();
-  const { getCustomerById, updateCustomer } = useDataContext();
+  const { data, getCustomerById, updateCustomer } = useDataContext();
   const [formData, setFormData] = useState({
     type: "Cá nhân",
     fullName: "",
@@ -27,9 +28,9 @@ function EditCustomer() {
     email: "",
     phone: "",
   });
-
+  const [errorAlert, setErrorAlert] = useState(false);
+  const [successAlert, setSuccessAlert] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
-  const [alertSuccess, setAlertSuccess] = useState(false);
 
   useEffect(() => {
     const fetchCustomer = async () => {
@@ -39,7 +40,6 @@ function EditCustomer() {
           setFormData({
             type: customer.CUSTOMER_TYPE || "Cá nhân",
             fullName: customer.NAME || "",
-            // Định dạng lại ngày sử dụng moment
             birthday:
               moment(customer.REGISTRATION_DATE).format("YYYY-MM-DD") || "",
             idNumber: customer.ID_NUMBER || "",
@@ -66,7 +66,7 @@ function EditCustomer() {
   };
 
   const validateIDNumber = (idNumber) => {
-    const re = /^\d{5,10}$/;
+    const re = /^.{9}(.{3})?$/;
     return re.test(idNumber);
   };
 
@@ -75,8 +75,34 @@ function EditCustomer() {
     setFormData({ ...formData, [name]: value });
   };
 
+  const handleAlertClick = () => {
+    setErrorAlert(false);
+    setSuccessAlert(false);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const existingCustomer = data.find(
+      (customer) =>
+        customer.EMAIL === formData.email ||
+        customer.PHONE === formData.phone ||
+        customer.ID_NUMBER === formData.idNumber
+    );
+
+    if (existingCustomer) {
+      setErrorAlert(true);
+      setAlertMessage(
+        `Đã tồn tại khách hàng với ${
+          existingCustomer.EMAIL === formData.email
+            ? "email này"
+            : existingCustomer.PHONE === formData.phone
+            ? "số điện thoại này"
+            : "số CCCD/CMND này"
+        }, Vui lòng nhập lại!`
+      );
+      return;
+    }
 
     const requiredFields = [
       "fullName",
@@ -86,29 +112,30 @@ function EditCustomer() {
       "email",
       "phone",
     ];
+
     for (const field of requiredFields) {
       if (!formData[field]) {
-        setAlertSuccess(false);
+        setErrorAlert(true);
         setAlertMessage("Vui lòng điền đầy đủ thông tin.");
         return;
       }
     }
 
     if (!validateEmail(formData.email)) {
-      setAlertSuccess(false);
+      setErrorAlert(true);
       setAlertMessage("Vui lòng nhập địa chỉ email hợp lệ.");
       return;
     }
 
     if (!validatePhoneNumber(formData.phone)) {
-      setAlertSuccess(false);
+      setErrorAlert(true);
       setAlertMessage("Vui lòng nhập số điện thoại hợp lệ từ 10 đến 12 số.");
       return;
     }
 
     if (!validateIDNumber(formData.idNumber)) {
-      setAlertSuccess(false);
-      setAlertMessage("Vui lòng nhập số CCCD/CMND hợp lệ từ 5 đến 10 số.");
+      setErrorAlert(true);
+      setAlertMessage("Vui lòng nhập số CCCD/CMND hợp lệ 9 số hoặc 12 kí tự.");
       return;
     }
 
@@ -118,10 +145,10 @@ function EditCustomer() {
     };
     const success = await updateCustomer(id, formattedFormData);
     if (success) {
-      setAlertSuccess(true);
+      setSuccessAlert(true);
       setAlertMessage("Cập nhật thông tin thành công");
     } else {
-      setAlertSuccess(false);
+      setErrorAlert(true);
       setAlertMessage("Cập nhật thông tin thất bại");
     }
   };
@@ -131,19 +158,16 @@ function EditCustomer() {
       <CardHeader className="text-center text-2xl mt-5">
         Chỉnh sửa thông tin khách hàng
       </CardHeader>
+      {errorAlert && (
+        <AlertError message={alertMessage} onClick={handleAlertClick} />
+      )}
+      {successAlert && (
+        <AlertSuccess message={alertMessage} onClick={handleAlertClick} />
+      )}
       <CardForm
         onSubmit={handleSubmit}
         className="flex justify-center items-center"
       >
-        {alertMessage && (
-          <div
-            className={`text-center text-base my-3 ${
-              alertSuccess ? "text-green-700" : "text-red-700"
-            }`}
-          >
-            {alertMessage}
-          </div>
-        )}
         <div className="text-base font-semibold my-3">Loại khách hàng:</div>
         <select
           name="type"
@@ -248,7 +272,7 @@ function EditCustomer() {
         <div className="w-full flex justify-evenly items-center m-4">
           <button
             variant="secondary"
-            className="text-black border bg-green-200 p-1 hover:bg-green-400 rounded"
+            className="text-black border p-2 hover:bg-green-400 rounded bg-green-200 border-zinc-400 hover:ring-1"
             type="submit"
           >
             Cập nhật thông tin

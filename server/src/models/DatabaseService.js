@@ -4,22 +4,13 @@ const dotenv = require("dotenv");
 dotenv.config();
 
 class DatabaseConnection {
-  // constructor() {
-  //   this.OracleDB = OracleDB;
-  //   this.dbConfig = {
-  //     user: "TRAINING",
-  //     password: "training123",
-  //     connectString:
-  //       "(DESCRIPTION =(ADDRESS = (PROTOCOL = TCP)(HOST=192.168.1.188)(PORT = 1521))(CONNECT_DATA =(SERVICE_NAME='DB')))",
-  //   };
-  // }
   constructor() {
     this.OracleDB = OracleDB;
     this.dbConfig = {
-      user: "sys",
-      password: "Vjnhdatabase2k2",
-      connectString: "localhost/orcl",
-      privilege: OracleDB.SYSDBA,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      connectString: process.env.DB_CONNECT_STRING,
+      // privilege: process.env.DB_PRIVILEGE,
     };
   }
 
@@ -50,18 +41,6 @@ class DatabaseConnection {
       } catch (error) {
         reject(error);
       }
-    });
-  }
-
-  async commit() {
-    return new Promise((resolve, reject) => {
-      this.connection.commit((err) => {
-        if (err) {
-          reject(err);
-        }
-        console.log("Transaction committed");
-        resolve();
-      });
     });
   }
 

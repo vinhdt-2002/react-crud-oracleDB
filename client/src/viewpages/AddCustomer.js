@@ -1,3 +1,4 @@
+import { AlertError, AlertSuccess } from "components/ui/alert";
 import { CardForm, CardHeader } from "components/ui/card";
 import { Input } from "components/ui/input";
 import { useState } from "react";
@@ -27,8 +28,9 @@ function AddCustomer() {
     PHONE: "",
   });
 
+  const [errorAlert, setErrorAlert] = useState(false);
+  const [successAlert, setSuccessAlert] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
-  const [alertSuccess, setAlertSuccess] = useState(false);
 
   const validateEmail = (email) => {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -41,7 +43,7 @@ function AddCustomer() {
   };
 
   const validateIDNumber = (idNumber) => {
-    const re = /^\d{5,10}$/;
+    const re = /^.{9}(.{3})?$/;
     return re.test(idNumber);
   };
 
@@ -50,10 +52,14 @@ function AddCustomer() {
     setFormData({ ...formData, [name]: value });
   };
 
+  const handleAlertClick = () => {
+    setErrorAlert(false);
+    setSuccessAlert(false);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Kiểm tra xem thông tin đã tồn tại không
     const existingCustomer = data.find(
       (customer) =>
         customer.EMAIL === formData.EMAIL ||
@@ -62,19 +68,19 @@ function AddCustomer() {
     );
 
     if (existingCustomer) {
-      window.alert(
+      setErrorAlert(true);
+      setAlertMessage(
         `Đã tồn tại khách hàng với ${
           existingCustomer.EMAIL === formData.EMAIL
             ? "email này"
             : existingCustomer.PHONE === formData.PHONE
             ? "số điện thoại này"
             : "số CCCD/CMND này"
-        },Vui lòng nhập lại!`
+        }, Vui lòng nhập lại!`
       );
       return;
     }
 
-    // Tiếp tục thêm khách hàng nếu không có thông tin trùng lặp
     const requiredFields = [
       "CUSTOMER_TYPE",
       "NAME",
@@ -86,29 +92,34 @@ function AddCustomer() {
     ];
     for (const field of requiredFields) {
       if (!formData[field]) {
-        window.alert("Vui lòng điền đầy đủ thông tin.");
+        setErrorAlert(true);
+        setAlertMessage("Vui lòng điền đầy đủ thông tin.");
         return;
       }
     }
 
     if (!validateEmail(formData.EMAIL)) {
-      window.alert("Vui lòng nhập địa chỉ email hợp lệ.");
+      setErrorAlert(true);
+      setAlertMessage("Vui lòng nhập địa chỉ email hợp lệ.");
       return;
     }
 
     if (!validatePhoneNumber(formData.PHONE)) {
-      window.alert("Vui lòng nhập số điện thoại hợp lệ từ 10 đến 12 số.");
+      setErrorAlert(true);
+      setAlertMessage("Vui lòng nhập số điện thoại hợp lệ từ 10 đến 12 số.");
       return;
     }
 
     if (!validateIDNumber(formData.ID_NUMBER)) {
-      window.alert("Vui lòng nhập số CCCD/CMND hợp lệ từ 5 đến 10 số.");
+      setErrorAlert(true);
+      setAlertMessage("Vui lòng nhập số CCCD/CMND hợp lệ 9 số hoặc 12 kí tự.");
       return;
     }
 
     const success = await addCustomer(formData);
     if (success) {
-      window.alert("Khách hàng đã được thêm thành công.");
+      setSuccessAlert(true);
+      setAlertMessage("Khách hàng đã được thêm thành công.");
       setFormData({
         CUSTOMER_TYPE: "Cá nhân",
         NAME: "",
@@ -119,7 +130,8 @@ function AddCustomer() {
         PHONE: "",
       });
     } else {
-      window.alert(
+      setErrorAlert(true);
+      setAlertMessage(
         error && error.response && error.response.data
           ? error.response.data.error
           : "Không thể thêm khách hàng. Vui lòng thử lại sau."
@@ -132,19 +144,16 @@ function AddCustomer() {
       <CardHeader className="text-center text-2xl mt-5">
         Thêm khách hàng mới
       </CardHeader>
+      {errorAlert && (
+        <AlertError message={alertMessage} onClick={handleAlertClick} />
+      )}
+      {successAlert && (
+        <AlertSuccess message={alertMessage} onClick={handleAlertClick} />
+      )}
       <CardForm
         onSubmit={handleSubmit}
         className="flex flex-col justify-center items-center"
       >
-        {alertMessage && (
-          <div
-            className={`text-center text-base my-3 ${
-              alertSuccess ? "text-green-700" : "text-red-700"
-            }`}
-          >
-            {alertMessage}
-          </div>
-        )}
         <div className="text-base font-semibold my-3">Loại khách hàng:</div>
         <select
           className="w-1/4 p-1 rounded-md text-center border border-zinc-400 bg-transparent hover:ring-1"
@@ -249,7 +258,7 @@ function AddCustomer() {
         <div className="w-full flex justify-evenly items-center m-4">
           <button
             variant="secondary"
-            className="text-black border p-2 hover:bg-green-400 rounded bg-green-200 border-zinc-400"
+            className="text-black border p-2 hover:bg-green-400 rounded bg-green-200 border-zinc-400 hover:ring-1"
             type="submit"
           >
             Thêm khách hàng

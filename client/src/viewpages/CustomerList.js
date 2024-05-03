@@ -35,13 +35,13 @@ function CustomerList() {
       </CardHeader>
       <Link
         to="/add-customer"
-        className="text-black bg-green-200 border border-zinc-400 hover:bg-green-400 px-4 py-2 rounded"
+        className="text-black bg-green-200 border border-zinc-400 hover:bg-green-400 px-4 py-2 rounded hover:ring-1"
       >
         Thêm khách hàng mới
       </Link>
 
       <Table className="mt-4">
-        <TableHeader className="bg-zinc-100">
+        <TableHeader className="bg-zinc-100 ">
           <TableRow>
             <TableHead>ID</TableHead>
             <TableHead>Loại</TableHead>
@@ -73,7 +73,7 @@ function CustomerList() {
               <TableCell className="text-left">{customer.ADDRESS}</TableCell>
               <TableCell className="text-left">{customer.EMAIL}</TableCell>
               <TableCell className="text-right">{customer.PHONE}</TableCell>
-              <TableCell className="text-center">
+              <TableCell className="text-center hover:ring-0">
                 <ReuseDialog
                   header=" Bạn có chắc chắn muốn xóa khách hàng này chứ ?"
                   des="Đây là hành động không thể quay lại, vui lòng chọn:"
