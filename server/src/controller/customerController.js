@@ -118,7 +118,7 @@ exports.addCustomer = async (req, res) => {
 
     const insertQuery = `
       BEGIN
-        vinh_add_customer(:CUSTOMER_TYPE, :NAME, TO_DATE(:REGISTRATION_DATE, 'YYYY-MM-DD'), :ID_NUMBER, :ADDRESS, :EMAIL, :PHONE);
+        vinh_add_customer(:CUSTOMER_TYPE, :NAME, TO_DATE(:REGISTRATION_DATE, 'YYYY-MM-DD'), :ID_NUMBER, :ADDRESS, :EMAIL, :PHONE, :p_err_code, :p_err_msg);
       END;
     `;
 
@@ -130,23 +130,29 @@ exports.addCustomer = async (req, res) => {
       ADDRESS,
       EMAIL,
       PHONE,
+      p_err_code: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER },
+      p_err_msg: { dir: oracledb.BIND_OUT, type: oracledb.STRING },
     };
 
     const connection = await dbConnection.connectWithDB();
 
-    await connection.execute(insertQuery, bindValues);
+    const result = await connection.execute(insertQuery, bindValues);
+    console.log("Error code:", result.outBinds.p_err_code); // In ra giá trị của p_err_code
+    console.log("Error message:", result.outBinds.p_err_msg); // In ra giá trị của p_err_msg
 
-    res.status(201).json({ message: "Thêm khách hàng thành công" });
-  } catch (error) {
-    if (error && error.code === "ORA-00001") {
-      console.error("Lỗi khi thêm khách hàng:", error);
-      res.status(400).json({ error: "Email hoặc số điện thoại đã tồn tại" });
+    if (result.outBinds.p_err_code === 0) {
+      res.status(201).json({ message: "Thêm khách hàng thành công" });
     } else {
-      console.error("Lỗi khi thêm khách hàng:", error);
-      res
-        .status(500)
-        .json({ error: "Lỗi khi thêm khách hàng vào cơ sở dữ liệu" });
+      res.status(400).json({
+        errorCode: result.outBinds.p_err_code,
+        errorMessage: result.outBinds.p_err_msg,
+      });
     }
+  } catch (error) {
+    console.error("Lỗi khi thêm khách hàng:", error);
+    res.status(500).json({
+      errorMessage: "Lỗi khi thêm khách hàng vào cơ sở dữ liệu",
+    });
   }
 };
 
@@ -179,17 +185,27 @@ exports.updateCustomer = async (req, res) => {
   try {
     const customerId = req.params.customerId;
 
-    const { type, fullName, birthday, idNumber, address, email, phone } =
-      req.body;
+    const {
+      CUSTOMER_TYPE,
+      NAME,
+      REGISTRATION_DATE,
+      ID_NUMBER,
+      ADDRESS,
+      EMAIL,
+      PHONE,
+    } = req.body;
 
-    if (birthday && !moment(birthday, "YYYY-MM-DD", true).isValid()) {
+    if (
+      REGISTRATION_DATE &&
+      !moment(REGISTRATION_DATE, "YYYY-MM-DD", true).isValid()
+    ) {
       return res.status(400).json({
         error: "Ngày sinh không hợp lệ. Định dạng phải là YYYY-MM-DD",
       });
     }
 
-    const formattedDate = birthday
-      ? moment(birthday).format("YYYY-MM-DD")
+    const formattedDate = REGISTRATION_DATE
+      ? moment(REGISTRATION_DATE).format("YYYY-MM-DD")
       : null;
 
     console.log("Updating customer with ID:", customerId);
@@ -198,43 +214,47 @@ exports.updateCustomer = async (req, res) => {
     const updateProcedure = `
       BEGIN
         vinh_update_customer(
-          :customerId,
-          :type,
-          :fullName,
-          TO_DATE(:birthday, 'YYYY-MM-DD'),
-          :idNumber,
-          :address,
-          :email,
-          :phone
+          :p_customer_id,
+          :p_customer_type,
+          :p_name,
+          TO_DATE(:p_registration_date, 'YYYY-MM-DD'),
+          :p_id_number,
+          :p_address,
+          :p_email,
+          :p_phone,
+          :p_err_code,
+          :p_err_msg
         );
       END;
     `;
 
     const bindValues = {
-      customerId,
-      type,
-      fullName,
-      birthday: formattedDate,
-      idNumber,
-      address,
-      email,
-      phone,
+      p_customer_id: customerId,
+      p_customer_type: CUSTOMER_TYPE,
+      p_name: NAME,
+      p_registration_date: formattedDate,
+      p_id_number: ID_NUMBER,
+      p_address: ADDRESS,
+      p_email: EMAIL,
+      p_phone: PHONE,
+      p_err_code: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER },
+      p_err_msg: { dir: oracledb.BIND_OUT, type: oracledb.STRING },
     };
 
     await dbConnection.init();
     const connection = await dbConnection.connectWithDB();
 
-    await connection.execute(updateProcedure, bindValues);
-    console.log("Customer updated successfully");
-
-    res.json({ success: true });
-  } catch (error) {
-    if (error && error.code === "ORA-00001") {
-      console.error("Lỗi khi cập nhật thông tin khách hàng:", error);
-      res.status(400).json({ error: "Email hoặc số điện thoại đã tồn tại" });
+    const result = await connection.execute(updateProcedure, bindValues);
+    if (result.outBinds.p_err_code == 0) {
+      res.status(201).json({ message: "Cập nhật thông tin thành công" });
     } else {
-      console.error("Lỗi khi cập nhật thông tin khách hàng:", error);
-      res.status(500).json({ error: "Lỗi khi cập nhật thông tin khách hàng" });
+      res.status(409).json({
+        errorCode: result.outBinds.p_err_msg,
+        errorMessage: result.outBinds.p_err_msg,
+      });
     }
+  } catch (error) {
+    console.error("Lỗi khi cập nhật:", error);
+    res.status(500).json({ error: "Lỗi khi cập nhật thông tin khách hàng" });
   }
 };

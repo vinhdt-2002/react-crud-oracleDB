@@ -1,14 +1,20 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { IoIosClose } from "react-icons/io";
 
 const AlertSuccess = ({ message, onClick }) => {
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      onClick();
-    }, 2000);
+  const [initialRender, setInitialRender] = useState(true);
 
-    return () => clearTimeout(timer);
-  }, [onClick]);
+  useEffect(() => {
+    if (!initialRender) {
+      const timer = setTimeout(() => {
+        onClick();
+      }, 2000);
+
+      return () => clearTimeout(timer);
+    } else {
+      setInitialRender(false);
+    }
+  }, [onClick, initialRender]);
 
   return (
     <>
@@ -31,13 +37,19 @@ const AlertSuccess = ({ message, onClick }) => {
 };
 
 const AlertError = ({ message, onClick }) => {
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      onClick();
-    }, 2000);
+  const [initialRender, setInitialRender] = useState(true);
 
-    return () => clearTimeout(timer);
-  }, [onClick]);
+  useEffect(() => {
+    if (!initialRender) {
+      const timer = setTimeout(() => {
+        onClick();
+      }, 2000);
+
+      return () => clearTimeout(timer);
+    } else {
+      setInitialRender(false);
+    }
+  }, [onClick, initialRender]);
 
   return (
     <>

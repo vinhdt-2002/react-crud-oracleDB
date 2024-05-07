@@ -1,7 +1,7 @@
 import { AlertError, AlertSuccess } from "components/ui/alert";
 import { CardForm, CardHeader } from "components/ui/card";
 import { Input } from "components/ui/input";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FaBirthdayCake } from "react-icons/fa";
 import {
   FaBuildingUser,
@@ -16,8 +16,7 @@ import { Link, Outlet } from "react-router-dom";
 import { useDataContext } from "../api/DataContext";
 
 function AddCustomer() {
-  const { data, addCustomer, error } = useDataContext();
-
+  const { addCustomer, errorMessage } = useDataContext();
   const [formData, setFormData] = useState({
     CUSTOMER_TYPE: "Cá nhân",
     NAME: "",
@@ -27,10 +26,24 @@ function AddCustomer() {
     EMAIL: "",
     PHONE: "",
   });
-
   const [errorAlert, setErrorAlert] = useState(false);
   const [successAlert, setSuccessAlert] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
+
+  useEffect(() => {
+    if (errorMessage !== null) {
+      setAlertMessage(
+        errorMessage || "Không thể thêm khách hàng. Vui lòng thử lại sau."
+      );
+      setErrorAlert(true);
+      setSuccessAlert(false);
+    }
+  }, [errorMessage]);
+
+  const handleAlertClick = () => {
+    setErrorAlert(false);
+    setSuccessAlert(false);
+  };
 
   const validateEmail = (email) => {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -52,34 +65,8 @@ function AddCustomer() {
     setFormData({ ...formData, [name]: value });
   };
 
-  const handleAlertClick = () => {
-    setErrorAlert(false);
-    setSuccessAlert(false);
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    const existingCustomer = data.find(
-      (customer) =>
-        customer.EMAIL === formData.EMAIL ||
-        customer.PHONE === formData.PHONE ||
-        customer.ID_NUMBER === formData.ID_NUMBER
-    );
-
-    if (existingCustomer) {
-      setErrorAlert(true);
-      setAlertMessage(
-        `Đã tồn tại khách hàng với ${
-          existingCustomer.EMAIL === formData.EMAIL
-            ? "email này"
-            : existingCustomer.PHONE === formData.PHONE
-            ? "số điện thoại này"
-            : "số CCCD/CMND này"
-        }, Vui lòng nhập lại!`
-      );
-      return;
-    }
 
     const requiredFields = [
       "CUSTOMER_TYPE",
@@ -131,11 +118,6 @@ function AddCustomer() {
       });
     } else {
       setErrorAlert(true);
-      setAlertMessage(
-        error && error.response && error.response.data
-          ? error.response.data.error
-          : "Không thể thêm khách hàng. Vui lòng thử lại sau."
-      );
     }
   };
 

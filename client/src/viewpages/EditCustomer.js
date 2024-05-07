@@ -18,15 +18,15 @@ import { useDataContext } from "../api/DataContext";
 
 function EditCustomer() {
   const { id } = useParams();
-  const { data, getCustomerById, updateCustomer } = useDataContext();
+  const { getCustomerById, updateCustomer } = useDataContext();
   const [formData, setFormData] = useState({
-    type: "Cá nhân",
-    fullName: "",
-    birthday: "",
-    idNumber: "",
-    address: "",
-    email: "",
-    phone: "",
+    CUSTOMER_TYPE: "Cá nhân",
+    NAME: "",
+    REGISTRATION_DATE: "",
+    ID_NUMBER: "",
+    ADDRESS: "",
+    EMAIL: "",
+    PHONE: "",
   });
   const [errorAlert, setErrorAlert] = useState(false);
   const [successAlert, setSuccessAlert] = useState(false);
@@ -38,14 +38,14 @@ function EditCustomer() {
         const customer = await getCustomerById(id);
         if (customer) {
           setFormData({
-            type: customer.CUSTOMER_TYPE || "Cá nhân",
-            fullName: customer.NAME || "",
-            birthday:
+            CUSTOMER_TYPE: customer.CUSTOMER_TYPE || "Cá nhân",
+            NAME: customer.NAME || "",
+            REGISTRATION_DATE:
               moment(customer.REGISTRATION_DATE).format("YYYY-MM-DD") || "",
-            idNumber: customer.ID_NUMBER || "",
-            address: customer.ADDRESS || "",
-            email: customer.EMAIL || "",
-            phone: customer.PHONE || "",
+            ID_NUMBER: customer.ID_NUMBER || "",
+            ADDRESS: customer.ADDRESS || "",
+            EMAIL: customer.EMAIL || "",
+            PHONE: customer.PHONE || "",
           });
         }
       } catch (error) {
@@ -83,36 +83,14 @@ function EditCustomer() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const existingCustomer = data.find(
-      (customer) =>
-        customer.EMAIL === formData.email ||
-        customer.PHONE === formData.phone ||
-        customer.ID_NUMBER === formData.idNumber
-    );
-
-    if (existingCustomer) {
-      setErrorAlert(true);
-      setAlertMessage(
-        `Đã tồn tại khách hàng với ${
-          existingCustomer.EMAIL === formData.email
-            ? "email này"
-            : existingCustomer.PHONE === formData.phone
-            ? "số điện thoại này"
-            : "số CCCD/CMND này"
-        }, Vui lòng nhập lại!`
-      );
-      return;
-    }
-
     const requiredFields = [
-      "fullName",
-      "birthday",
-      "idNumber",
-      "address",
-      "email",
-      "phone",
+      "NAME",
+      "REGISTRATION_DATE",
+      "ID_NUMBER",
+      "ADDRESS",
+      "EMAIL",
+      "PHONE",
     ];
-
     for (const field of requiredFields) {
       if (!formData[field]) {
         setErrorAlert(true);
@@ -121,19 +99,19 @@ function EditCustomer() {
       }
     }
 
-    if (!validateEmail(formData.email)) {
+    if (!validateEmail(formData.EMAIL)) {
       setErrorAlert(true);
       setAlertMessage("Vui lòng nhập địa chỉ email hợp lệ.");
       return;
     }
 
-    if (!validatePhoneNumber(formData.phone)) {
+    if (!validatePhoneNumber(formData.PHONE)) {
       setErrorAlert(true);
       setAlertMessage("Vui lòng nhập số điện thoại hợp lệ từ 10 đến 12 số.");
       return;
     }
 
-    if (!validateIDNumber(formData.idNumber)) {
+    if (!validateIDNumber(formData.ID_NUMBER)) {
       setErrorAlert(true);
       setAlertMessage("Vui lòng nhập số CCCD/CMND hợp lệ 9 số hoặc 12 kí tự.");
       return;
@@ -141,15 +119,20 @@ function EditCustomer() {
 
     const formattedFormData = {
       ...formData,
-      birthday: moment(formData.birthday).format("YYYY-MM-DD"),
+      REGISTRATION_DATE: moment(formData.REGISTRATION_DATE).format(
+        "YYYY-MM-DD"
+      ),
     };
-    const success = await updateCustomer(id, formattedFormData);
-    if (success) {
+    const response = await updateCustomer(id, formattedFormData);
+    if (response.errorCode !== undefined && response.errorCode !== null) {
+      setErrorAlert(true);
+      setAlertMessage(
+        response.errorMessage || "Lỗi khi cập nhật thông tin khách hàng"
+      );
+    } else {
+      // Thành công
       setSuccessAlert(true);
       setAlertMessage("Cập nhật thông tin thành công");
-    } else {
-      setErrorAlert(true);
-      setAlertMessage("Cập nhật thông tin thất bại");
     }
   };
 
@@ -170,21 +153,21 @@ function EditCustomer() {
       >
         <div className="text-base font-semibold my-3">Loại khách hàng:</div>
         <select
-          name="type"
+          name="CUSTOMER_TYPE"
           className="w-1/4 p-1 rounded-md text-center border border-zinc-400 bg-transparent hover:ring-1"
-          value={formData.type}
+          value={formData.CUSTOMER_TYPE}
           onChange={handleChange}
         >
           <option value="Cá nhân">Cá nhân</option>
           <option value="Tổ chức">Tổ chức</option>
         </select>
 
-        {formData.type === "Cá nhân" ? (
+        {formData.CUSTOMER_TYPE === "Cá nhân" ? (
           <>
             <Input
               type="text"
-              name="fullName"
-              value={formData.fullName}
+              name="NAME"
+              value={formData.NAME}
               onChange={handleChange}
               label="Họ và tên:"
               icon={<FaUserPen />}
@@ -192,8 +175,8 @@ function EditCustomer() {
             />
             <Input
               type="date"
-              name="birthday"
-              value={formData.birthday}
+              name="REGISTRATION_DATE"
+              value={formData.REGISTRATION_DATE}
               onChange={handleChange}
               label="Ngày sinh:"
               icon={<FaBirthdayCake />}
@@ -201,8 +184,8 @@ function EditCustomer() {
             />
             <Input
               type="text"
-              name="idNumber"
-              value={formData.idNumber}
+              name="ID_NUMBER"
+              value={formData.ID_NUMBER}
               onChange={handleChange}
               label="Số CCCD/CMND:"
               icon={<FaRegAddressCard />}
@@ -213,8 +196,8 @@ function EditCustomer() {
           <>
             <Input
               type="text"
-              name="fullName"
-              value={formData.fullName}
+              name="NAME"
+              value={formData.NAME}
               onChange={handleChange}
               label="Tên công ty:"
               icon={<FaBuildingUser />}
@@ -222,8 +205,8 @@ function EditCustomer() {
             />
             <Input
               type="date"
-              name="birthday"
-              value={formData.birthday}
+              name="REGISTRATION_DATE"
+              value={formData.REGISTRATION_DATE}
               onChange={handleChange}
               label="Ngày đăng ký:"
               icon={<MdCalendarMonth />}
@@ -231,8 +214,8 @@ function EditCustomer() {
             />
             <Input
               type="text"
-              name="idNumber"
-              value={formData.idNumber}
+              name="ID_NUMBER"
+              value={formData.ID_NUMBER}
               onChange={handleChange}
               label="Số ĐKKD:"
               icon={<IoCardSharp />}
@@ -243,8 +226,8 @@ function EditCustomer() {
 
         <Input
           type="text"
-          name="address"
-          value={formData.address}
+          name="ADDRESS"
+          value={formData.ADDRESS}
           onChange={handleChange}
           label="Địa chỉ:"
           icon={<RiMapPin2Fill />}
@@ -252,8 +235,8 @@ function EditCustomer() {
         />
         <Input
           type="email"
-          name="email"
-          value={formData.email}
+          name="EMAIL"
+          value={formData.EMAIL}
           onChange={handleChange}
           label="Email:"
           icon={<MdEmail />}
@@ -261,8 +244,8 @@ function EditCustomer() {
         />
         <Input
           type="tel"
-          name="phone"
-          value={formData.phone}
+          name="PHONE"
+          value={formData.PHONE}
           onChange={handleChange}
           label="Điện thoại:"
           icon={<FaSquarePhone />}

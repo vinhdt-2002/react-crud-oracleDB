@@ -7,6 +7,8 @@ export const useDataContext = () => useContext(DataContext);
 export const DataProvider = ({ children }) => {
   const [data, setData] = useState([]);
   const [error, setError] = useState(null);
+  const [errorCode, setErrorCode] = useState(null);
+  const [errorMessage, setErrorMessage] = useState(null);
 
   useEffect(() => {
     fetchData();
@@ -51,7 +53,11 @@ export const DataProvider = ({ children }) => {
     } catch (error) {
       console.error("Error adding customer:", error);
       if (error.response && error.response.data) {
-        setError(error.response.data.error);
+        const { errorCode, errorMessage } = error.response.data;
+        setErrorCode(errorCode);
+        setErrorMessage(errorMessage);
+        console.error("Error code:", errorCode);
+        console.error("Error message:", errorMessage);
       }
     }
     return false;
@@ -87,15 +93,18 @@ export const DataProvider = ({ children }) => {
         );
         setData(updatedData);
         fetchData();
-        return true;
+        return {};
       }
     } catch (error) {
       console.error("Error updating customer:", error);
       if (error.response && error.response.data) {
-        setError(error.response.data.error);
+        const { errorCode, errorMessage } = error.response.data;
+        console.error("Error code:", errorCode);
+        console.error("Error message:", errorMessage);
+        return { errorCode, errorMessage };
       }
     }
-    return false;
+    return {};
   };
 
   return (
@@ -103,6 +112,8 @@ export const DataProvider = ({ children }) => {
       value={{
         data,
         error,
+        errorCode,
+        errorMessage,
         fetchData,
         addCustomer,
         deleteCustomer,
@@ -114,4 +125,5 @@ export const DataProvider = ({ children }) => {
     </DataContext.Provider>
   );
 };
+
 export default DataContext;
